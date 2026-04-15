@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Runtime state (generated per-project, not part of the plugin)
+c2rust-manifest.toml
+c2rust-assessment.md
+c2rust-plan.md
+c2rust-verification-report.md

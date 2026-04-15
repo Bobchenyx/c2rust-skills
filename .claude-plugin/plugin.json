@@ -1,0 +1,7 @@
+{
+  "name": "c2rust-skills",
+  "version": "0.1.0",
+  "description": "Repository-level C-to-Rust conversion toolkit. Provides a complete pipeline from C codebase assessment through verified idiomatic Rust output, using Claude Sonnet 4.6 for direct translation with intelligent refinement.",
+  "author": "c2rust-skills",
+  "license": "MIT"
+}
