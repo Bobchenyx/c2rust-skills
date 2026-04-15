@@ -97,14 +97,14 @@ grep 'warning:' /tmp/clippy-results.txt | sed 's/.*warning: //' | sort | uniq -c
 ```bash
 echo "=== Unsafe Usage ==="
 
-# Count unsafe blocks
-echo "Unsafe blocks: $(grep -rn 'unsafe\s*{' --include='*.rs' | grep -v test | grep -v '// ' | wc -l)"
+# Count unsafe blocks (exclude test dirs)
+echo "Unsafe blocks: $(grep -rn --exclude-dir=tests --exclude-dir=benches 'unsafe\s*{' src/ --include='*.rs' | grep -v '// ' | wc -l)"
 
 # Count unsafe functions
-echo "Unsafe fns: $(grep -rn 'unsafe\s\+fn' --include='*.rs' | grep -v test | wc -l)"
+echo "Unsafe fns: $(grep -rn --exclude-dir=tests --exclude-dir=benches 'unsafe\s\+fn' src/ --include='*.rs' | wc -l)"
 
 # List all unsafe usages with context
-grep -rn 'unsafe' --include='*.rs' | grep -v test | grep -v '// '
+grep -rn --exclude-dir=tests --exclude-dir=benches 'unsafe' src/ --include='*.rs' | grep -v '// '
 ```
 
 Categorize each unsafe usage:

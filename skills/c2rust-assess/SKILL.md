@@ -49,19 +49,39 @@ Record: build system type, version requirements, build targets, build flags.
 ## Phase 2: Source File Inventory
 
 ```bash
+# Exclude directories that are not part of the core source
+EXCLUDE="-not -path '*/.git/*' -not -path '*/test*' -not -path '*/tests/*' -not -path '*/bench*' -not -path '*/fuzz*' -not -path '*/example*' -not -path '*/vendor*' -not -path '*/third_party/*' -not -path '*/unity/*'"
+
 # Count C source files and headers
 echo "=== Source Files ==="
-find . -name '*.c' -not -path '*/test*' -not -path '*/.git/*' | wc -l
-find . -name '*.h' -not -path '*/.git/*' | wc -l
+c_count=$(eval "find . -name '*.c' $EXCLUDE" | wc -l)
+h_count=$(eval "find . -name '*.h' $EXCLUDE" | wc -l)
+echo "C files: $c_count"
+echo "H files: $h_count"
+
+# Header-only library detection
+if [ "$c_count" -eq 0 ] && [ "$h_count" -gt 0 ]; then
+  echo ""
+  echo "WARNING: No .c files found — this may be a header-only library."
+  echo "Checking for implementation in headers..."
+  # Headers with function bodies (not just declarations) indicate header-only
+  impl_lines=$(eval "find . -name '*.h' $EXCLUDE" | xargs grep -l 'static.*{$\|^{' 2>/dev/null | head -5)
+  if [ -n "$impl_lines" ]; then
+    echo "Header-only implementation found in:"
+    echo "$impl_lines"
+    echo "Counting .h LOC as source LOC."
+    echo ""
+  fi
+fi
 
 # LOC count
 echo "=== Lines of Code ==="
-find . -name '*.c' -not -path '*/test*' -not -path '*/.git/*' | xargs wc -l 2>/dev/null | tail -1
-find . -name '*.h' -not -path '*/.git/*' | xargs wc -l 2>/dev/null | tail -1
+eval "find . -name '*.c' $EXCLUDE" | xargs wc -l 2>/dev/null | tail -1
+eval "find . -name '*.h' $EXCLUDE" | xargs wc -l 2>/dev/null | tail -1
 
 # Per-directory breakdown (identify modules)
 echo "=== Module Breakdown ==="
-find . -name '*.c' -not -path '*/.git/*' -exec dirname {} \; | sort | uniq -c | sort -rn
+eval "find . -name '*.c' $EXCLUDE" -exec dirname {} \; | sort | uniq -c | sort -rn
 ```
 
 ---
@@ -98,28 +118,35 @@ done
 
 Scan for patterns from [references/c-pattern-catalog.md](references/c-pattern-catalog.md).
 
+**Important**: All pattern greps MUST exclude test, bench, fuzz, vendor, and example directories. Use this exclude pattern on every grep:
+
 ```bash
+EXCL="--exclude-dir=test --exclude-dir=tests --exclude-dir=bench --exclude-dir=fuzz --exclude-dir=fuzzing --exclude-dir=fuzzers --exclude-dir=example --exclude-dir=examples --exclude-dir=vendor --exclude-dir=third_party --exclude-dir=unity --exclude-dir=contrib --exclude-dir=.git"
+# Also filter out root-level test/bench files via pipe when counting:
+EXCL_FILES='grep -v "test[^/]*\.c:\|bench[^/]*\.c:\|_test\.c:\|_bench\.c:"'
+
 echo "=== BLOCKING PATTERNS ==="
-echo "Inline assembly:     $(grep -rn '\b__asm__\b\|\b__asm\b\|asm\s*volatile\|asm\s*(' --include='*.c' --include='*.h' 2>/dev/null | grep -v '//' | wc -l)"
-echo "Computed goto:       $(grep -rn 'goto\s*\*\|&&[a-zA-Z_]' --include='*.c' 2>/dev/null | wc -l)"
-echo "setjmp/longjmp:      $(grep -rn '\bsetjmp\b\|\blongjmp\b\|\bsigsetjmp\b' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
+echo "Inline assembly:     $(grep -rn $EXCL '\b__asm__\b\|\b__asm\b\|asm\s*volatile\|asm\s*(' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Computed goto:       $(grep -rn $EXCL 'goto\s*\*\|&&[a-zA-Z_]' --include='*.c' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "setjmp/longjmp:      $(grep -rn $EXCL '\bsetjmp\b\|\blongjmp\b\|\bsigsetjmp\b' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
 
 echo ""
 echo "=== HARD PATTERNS ==="
-echo "Void pointers:       $(grep -rn 'void\s*\*' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
-echo "Unions:              $(grep -rn '\bunion\s\+{\\|\bunion\s\+[a-zA-Z]' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
-echo "Bitfields:           $(grep -rn ':\s*[0-9]\+\s*;' --include='*.h' 2>/dev/null | wc -l)"
-echo "Variadic functions:  $(grep -rn 'va_list\|va_start\|\.\.\.)' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
-echo "Global mutable:      $(grep -rn '^static\b' --include='*.c' 2>/dev/null | grep -v 'const\|inline' | grep -v '(.*)' | wc -l)"
-echo "Signal handlers:     $(grep -rn '\bsignal\b\|\bsigaction\b' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
+echo "Void pointers:       $(grep -rn $EXCL 'void\s*\*' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Unions:              $(grep -rn $EXCL '\bunion\s\+{\\|\bunion\s\+[a-zA-Z]' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Bitfields:           $(grep -rn $EXCL ':\s*[0-9]\+\s*;' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Variadic functions:  $(grep -rn $EXCL 'va_list\|va_start' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Global mutable:      $(grep -rn $EXCL '^static\b' --include='*.c' 2>/dev/null | eval $EXCL_FILES | grep -v 'const\|inline' | grep -v '(.*)' | grep '[;={]' | wc -l)"
+echo "Signal handlers:     $(grep -rn $EXCL '\bsignal\b\|\bsigaction\b' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
 
 echo ""
 echo "=== MODERATE PATTERNS ==="
-echo "goto (total):        $(grep -rn '\bgoto\b' --include='*.c' 2>/dev/null | wc -l)"
-echo "Function pointers:   $(grep -rn '(\*[a-zA-Z_]\+)\s*(' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
-echo "Pointer arithmetic:  $(grep -rn '[a-zA-Z_]\+\s*++\|++\s*[a-zA-Z_]' --include='*.c' 2>/dev/null | wc -l)"
-echo "#ifdef blocks:       $(grep -rn '#ifdef\|#if\s\+defined' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
-echo "Casts:               $(grep -rn '([a-zA-Z_]\+\s*\*)' --include='*.c' 2>/dev/null | wc -l)"
+echo "goto (total):        $(grep -rn $EXCL '\bgoto\b' --include='*.c' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Fn pointers (inline):$(grep -rn $EXCL '(\*[a-zA-Z_]\+)\s*(' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Fn pointers (typedef):$(grep -rn $EXCL 'typedef.*(\*' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Pointer arithmetic:  $(grep -rn $EXCL '[a-zA-Z_]\+\s*++\|++\s*[a-zA-Z_]' --include='*.c' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "#ifdef blocks:       $(grep -rn $EXCL '#ifdef\|#if\s\+defined' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Casts:               $(grep -rn $EXCL '([a-zA-Z_]\+\s*\*)' --include='*.c' 2>/dev/null | eval $EXCL_FILES | wc -l)"
 ```
 
 ### Benign vs Dangerous Pattern Classification
@@ -130,7 +157,7 @@ Raw grep counts over-inflate risk. After scanning, **classify** patterns to sepa
 ```bash
 # List all goto targets with their label definitions
 # Forward goto to cleanup/end/fail/error labels = BENIGN (maps to ? + RAII)
-grep -rn '\bgoto\b' --include='*.c' 2>/dev/null | while read line; do
+grep -rn $EXCL '\bgoto\b' --include='*.c' 2>/dev/null | while read line; do
   file=$(echo "$line" | cut -d: -f1)
   lineno=$(echo "$line" | cut -d: -f2)
   label=$(echo "$line" | sed 's/.*goto\s*\([a-zA-Z_]*\).*/\1/')
@@ -144,14 +171,14 @@ grep -rn '\bgoto\b' --include='*.c' 2>/dev/null | while read line; do
 done
 ```
 
-**Void pointer classification** — distinguish generic-container void* from trivial/unused:
+**Void pointer classification** — distinguish generic-container void* from callback/context usage:
 ```bash
-# void* in function parameter that is cast immediately or unused = BENIGN
-# void* as return type of allocator/generic container = HARD (already counted above)
-# Quick heuristic: void* in typedef for callbacks is usually benign
-grep -rn 'void\s*\*' --include='*.c' --include='*.h' 2>/dev/null | \
-  grep -c 'unused\|userdata\|user_data\|context\|ctx\|cookie\|opaque\|cb_data'
-# These are typically benign — subtract from hard pattern count
+# void* as callback user data or context = BENIGN
+# void* as return type of allocator/generic container = HARD
+# void* as function pointer storage (e.g. `const void *function`) = HARD
+grep -rn $EXCL 'void\s*\*' --include='*.c' --include='*.h' 2>/dev/null | \
+  grep -c 'unused\|userdata\|user_data\|\buser\b\|context\|ctx\|cookie\|opaque\|cb_data\|closure\|arg\|priv\|data'
+# These are typically benign callback data — subtract from hard pattern count
 ```
 
 Use these classifications in the risk formula (Phase 7) to avoid over-inflating scores for projects with many forward-goto cleanup patterns or callback-style void pointers.
@@ -163,11 +190,12 @@ Some C patterns don't match any single grep pattern but require **complete data 
 ```bash
 echo ""
 echo "=== STRUCTURAL REDESIGN INDICATORS ==="
-echo "Packed structs:      $(grep -rn '__attribute__.*packed\|#pragma\s*pack' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
-echo "Flexible array:      $(grep -rn '\[\]\s*;' --include='*.h' 2>/dev/null | grep -v '//' | wc -l)"
-echo "Container intrusion: $(grep -rn '\bcontainer_of\b\|offsetof' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
-echo "Negative indexing:   $(grep -rn '\[-[0-9]\]' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
-echo "Token-paste macros:  $(grep -rn '##' --include='*.h' 2>/dev/null | grep -v '//' | wc -l)"
+echo "Packed structs:      $(grep -rn $EXCL '__attribute__.*packed\|#pragma\s*pack' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
+echo "Flexible array:      $(grep -rn $EXCL '\[\]\s*;' --include='*.h' 2>/dev/null | grep -v '//' | wc -l)"
+echo "Container intrusion: $(grep -rn $EXCL '\bcontainer_of\b\|offsetof' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
+echo "Negative indexing:   $(grep -rn $EXCL '\[-[0-9]\]' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
+echo "Token-paste macros:  $(grep -rn $EXCL '##' --include='*.h' 2>/dev/null | grep -v '//' | wc -l)"
+echo "Fn ptr in union:     $(grep -rn $EXCL 'void\s*\*.*function\|void\s*\*.*callback\|void\s*\*.*handler' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
 ```
 
 **What to flag**: If a project uses packed structs + flexible array members + negative pointer indexing together (e.g., sds, Redis objects), the core data structure is likely designed around C-specific memory layout tricks that must be completely reimagined in Rust (typically as a newtype over `Vec<T>` or similar). Note this in the assessment as a **structural redesign required** finding — it won't inflate the pattern count but must be communicated in the plan.
@@ -178,18 +206,25 @@ echo "Token-paste macros:  $(grep -rn '##' --include='*.h' 2>/dev/null | grep -v
 
 Identify logical modules using the following strategies.
 
-### Fast path: Single-file projects
+### Fast path: Single-file and header-only projects
 
-If the project has only 1 source file (e.g., `sds.c` + `sds.h`), skip module detection entirely:
+If the project has 0-1 source files, skip module detection entirely:
 
 ```bash
-c_file_count=$(find . -name '*.c' -not -path '*/test*' -not -path '*/.git/*' | wc -l)
+c_file_count=$(eval "find . -name '*.c' $EXCLUDE" | wc -l)
 if [ "$c_file_count" -le 1 ]; then
   echo "Single-module project — no decomposition needed"
 fi
+# Also handle header-only libraries (0 .c files, implementation in .h)
+if [ "$c_file_count" -eq 0 ]; then
+  h_with_impl=$(eval "find . -name '*.h' $EXCLUDE" | xargs grep -cl '{' 2>/dev/null | wc -l)
+  if [ "$h_with_impl" -gt 0 ]; then
+    echo "Header-only library detected — treat .h files as source"
+  fi
+fi
 ```
 
-Record as 1 module with all LOC. Proceed directly to risk scoring. No dependency graph, no ordering needed.
+Record as 1 module with all LOC (including .h LOC for header-only projects). Proceed directly to risk scoring. No dependency graph, no ordering needed.
 
 ### For multi-file projects
 

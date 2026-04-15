@@ -57,7 +57,7 @@ cd <target_dir>
 cargo check 2>&1 | tail -5
 errors=$(cargo check 2>&1 | grep -c '^error')
 warnings=$(cargo clippy -- -W clippy::all 2>&1 | grep -c '^warning')
-unsafe_count=$(grep -rn 'unsafe' src/ --include='*.rs' | grep -v test | grep -v '// ' | wc -l)
+unsafe_count=$(grep -rn --exclude-dir=tests --exclude-dir=benches 'unsafe' src/ --include='*.rs' | grep -v '// ' | wc -l)
 
 echo "Errors: $errors | Clippy warnings: $warnings | Unsafe blocks: $unsafe_count"
 ```

@@ -9,6 +9,12 @@ allowed-tools: [Read, Bash, Glob, Grep, Write, Edit, Agent]
 
 Translate C source code to idiomatic Rust using the `c-to-rust-translator` agent (Claude Sonnet 4.6). This produces clean, safe Rust code directly — no mechanical transpilation, no unsafe-heavy output to clean up later.
 
+**Completion checklist** (do NOT report success until ALL are done):
+1. Rust code written and compiles (`cargo check` clean)
+2. `cargo clippy -- -W clippy::all` passes with 0 warnings
+3. `cargo test` passes with all tests green
+4. `c2rust-manifest.toml` written with correct section names (see Step 7)
+
 ## Arguments
 
 The user invoked this with: $ARGUMENTS
@@ -19,14 +25,14 @@ The user invoked this with: $ARGUMENTS
 
 ## Prerequisites
 
-1. Read `c2rust-manifest.toml` — plan must be completed
-2. Verify Rust toolchain readiness (check `[toolchain].ready`)
+1. Read `c2rust-manifest.toml` if it exists — use assessment/plan data to guide conversion
+2. Verify Rust toolchain readiness
 
 ```bash
-cat c2rust-manifest.toml 2>/dev/null
+cat c2rust-manifest.toml 2>/dev/null || echo "No manifest yet — will create one after conversion"
 ```
 
-If toolchain is not ready, prompt user to run `/c2rust-check-env` first.
+If no manifest exists, proceed with conversion anyway — the manifest will be written in Step 7. If the manifest exists and `[toolchain].ready` is false, prompt user to run `/c2rust-check-env` first.
 
 ---
 
@@ -295,32 +301,16 @@ All tests must pass. If tests fail, fix the implementation and re-run.
 
 ### Gate criteria
 
-Only proceed to the Output step when ALL of the following are true:
+Only proceed to Step 7 when ALL of the following are true:
 - `cargo check`: 0 errors
 - `cargo clippy -- -W clippy::all`: 0 warnings
 - `cargo test`: all tests pass
 
 ---
 
-## Output
+## Step 7: Write Manifest (MANDATORY)
 
-### 1. Translated Rust Code
-
-All .rs files in the target directory, written as idiomatic Rust.
-
-### 2. Compilation Results
-
-Summary of `cargo check` / `cargo clippy` / `cargo test` output.
-
-### 3. Translation Notes
-
-Document any:
-- Intentional deviations from C behavior (with justification)
-- C patterns that were redesigned (e.g., linked list → Vec)
-- Remaining issues for `/c2rust-refine`
-- Assumptions made during translation
-
-### 4. Manifest Update
+**You MUST write `c2rust-manifest.toml` before reporting completion.** This file is required for other skills in the pipeline to function. Skipping this step means the conversion is incomplete.
 
 Update `c2rust-manifest.toml` using **exactly** these section names. Do NOT create custom sections like `[package]`, `[source]`, or `[target]`:
 
@@ -365,7 +355,12 @@ ready = true
 [dependencies_map]
 ```
 
-Report to the user:
+---
+
+## Output
+
+After writing the manifest, report to the user:
 - Modules translated
 - Compilation status (cargo check + clippy + test results)
+- Translation notes: intentional deviations from C, patterns redesigned, assumptions made
 - Any issues requiring `/c2rust-refine`
