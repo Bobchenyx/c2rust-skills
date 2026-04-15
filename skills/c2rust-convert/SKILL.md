@@ -156,9 +156,27 @@ Translate the following C module to idiomatic Rust.
 6. Write output to: [target file path]
 ```
 
-### Translation Strategy: Foundation-First Parallel
+### Translation Strategy
 
-Use a three-phase approach for optimal speed and consistency:
+Choose the strategy based on project size:
+
+#### Small project fast path (≤ 1 module OR < 2,000 LOC)
+
+For single-module or very small projects, use a single agent call with comprehensive context. The foundation-first multi-phase strategy adds unnecessary overhead here:
+
+```
+Single agent receives:
+- Full C header + source content
+- All design decisions from the plan
+- Target Rust file path
+- Complete API mapping
+```
+
+One agent, one call, one output file. No foundation types to write first, no parallelism needed.
+
+#### Foundation-First Parallel (multi-module projects)
+
+For projects with 2+ modules, use a three-phase approach for optimal speed and consistency:
 
 **Phase 1 — Foundation modules** (write directly, no agent needed):
 - Error types (`error.rs`) — defines `ParseError`, `JsonError`, etc.

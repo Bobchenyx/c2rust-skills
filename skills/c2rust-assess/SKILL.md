@@ -156,11 +156,44 @@ grep -rn 'void\s*\*' --include='*.c' --include='*.h' 2>/dev/null | \
 
 Use these classifications in the risk formula (Phase 7) to avoid over-inflating scores for projects with many forward-goto cleanup patterns or callback-style void pointers.
 
+### Structural Redesign Detection
+
+Some C patterns don't match any single grep pattern but require **complete data structure redesign** in Rust. These are invisible to pattern-count risk scoring but have high conversion impact. Scan for:
+
+```bash
+echo ""
+echo "=== STRUCTURAL REDESIGN INDICATORS ==="
+echo "Packed structs:      $(grep -rn '__attribute__.*packed\|#pragma\s*pack' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
+echo "Flexible array:      $(grep -rn '\[\]\s*;' --include='*.h' 2>/dev/null | grep -v '//' | wc -l)"
+echo "Container intrusion: $(grep -rn '\bcontainer_of\b\|offsetof' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
+echo "Negative indexing:   $(grep -rn '\[-[0-9]\]' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
+echo "Token-paste macros:  $(grep -rn '##' --include='*.h' 2>/dev/null | grep -v '//' | wc -l)"
+```
+
+**What to flag**: If a project uses packed structs + flexible array members + negative pointer indexing together (e.g., sds, Redis objects), the core data structure is likely designed around C-specific memory layout tricks that must be completely reimagined in Rust (typically as a newtype over `Vec<T>` or similar). Note this in the assessment as a **structural redesign required** finding — it won't inflate the pattern count but must be communicated in the plan.
+
 ---
 
 ## Phase 5: Module Boundary Identification
 
-Identify logical modules using the following strategies. For multi-directory projects, directory structure is usually sufficient. **For flat projects** (all .c files in one directory), use naming and dependency analysis.
+Identify logical modules using the following strategies.
+
+### Fast path: Single-file projects
+
+If the project has only 1 source file (e.g., `sds.c` + `sds.h`), skip module detection entirely:
+
+```bash
+c_file_count=$(find . -name '*.c' -not -path '*/test*' -not -path '*/.git/*' | wc -l)
+if [ "$c_file_count" -le 1 ]; then
+  echo "Single-module project — no decomposition needed"
+fi
+```
+
+Record as 1 module with all LOC. Proceed directly to risk scoring. No dependency graph, no ordering needed.
+
+### For multi-file projects
+
+For multi-directory projects, directory structure is usually sufficient. **For flat projects** (all .c files in one directory), use naming and dependency analysis.
 
 ### Strategy 1: Directory-based (multi-directory projects)
 
