@@ -242,7 +242,11 @@ pub use module_a::PublicType;
 
 ---
 
-## Step 6: Initial Compilation Check
+## Step 6: Compilation + Quality Gate
+
+All three checks must pass clean before the conversion is considered complete. This is a hard gate — do NOT report success if any check has errors or warnings.
+
+### 6a. Cargo check
 
 ```bash
 cd <target_dir>
@@ -253,38 +257,48 @@ echo "Errors: $(grep -c '^error' /tmp/cargo-check.txt 2>/dev/null || echo 0)"
 echo "Warnings: $(grep -c '^warning' /tmp/cargo-check.txt 2>/dev/null || echo 0)"
 ```
 
-### If compilation succeeds:
-- Run `cargo clippy` for quality check
-- Run `cargo test` if tests were included
-- Report success
-
-### If compilation fails:
-Analyze errors and attempt to fix them inline:
-
+If compilation fails, analyze errors and fix them inline:
 1. **Simple fixes** (import paths, type mismatches): Fix directly
 2. **Cross-module issues** (type mismatch between modules): Align types
 3. **Complex issues**: Note for `/c2rust-refine` phase
 
 Iterate: fix → `cargo check` → fix → until clean or issues need user input.
 
----
-
-## Step 7: Quality Checks
-
-After successful compilation:
+### 6b. Clippy (MANDATORY — must pass clean)
 
 ```bash
 cd <target_dir>
+cargo clippy -- -W clippy::all 2>&1 | tee /tmp/cargo-clippy.txt
 
-# Clippy
-cargo clippy -- -W clippy::all 2>&1 | head -50
+echo "=== Clippy Summary ==="
+echo "Warnings: $(grep -c '^warning' /tmp/cargo-clippy.txt 2>/dev/null || echo 0)"
+```
 
-# Run any generated tests
-cargo test 2>&1
+**If clippy has warnings, you MUST fix them before proceeding.** Common clippy fixes:
+- `derived_hash_with_manual_eq`: If you implement `PartialEq` manually, also implement `Hash` manually (or derive both)
+- `should_implement_trait`: Rename methods that collide with standard trait names (e.g., `cmp` → `compare`, or implement the `Ord` trait properly)
+- `non_canonical_partial_ord_impl`: Implement `PartialOrd` by delegating to `Ord`
+- `assign_op_pattern`: Use `+=`, `-=`, etc. instead of `x = x + y`
+- `manual_is_ascii_check`: Use `.is_ascii_lowercase()` etc. instead of range checks
 
-# Count unsafe usage (should be minimal or zero for non-FFI code)
+Iterate: fix → `cargo clippy` → fix → until zero warnings.
+
+### 6c. Tests
+
+```bash
+cd <target_dir>
+cargo test 2>&1 | tee /tmp/cargo-test.txt
 echo "Unsafe blocks: $(grep -rn 'unsafe' src/ --include='*.rs' | grep -v test | grep -v '// ' | wc -l)"
 ```
+
+All tests must pass. If tests fail, fix the implementation and re-run.
+
+### Gate criteria
+
+Only proceed to the Output step when ALL of the following are true:
+- `cargo check`: 0 errors
+- `cargo clippy -- -W clippy::all`: 0 warnings
+- `cargo test`: all tests pass
 
 ---
 
@@ -308,24 +322,50 @@ Document any:
 
 ### 4. Manifest Update
 
-Update `c2rust-manifest.toml`:
+Update `c2rust-manifest.toml` using **exactly** these section names. Do NOT create custom sections like `[package]`, `[source]`, or `[target]`:
+
 ```toml
+[project]
+name = "<project name>"
+source_dir = "."
+build_system = "make"
+
+[assessment]
+status = "completed"
+date = "2026-04-15"
+mode = "quick"
+feasibility = "HIGH"
+complexity = "low-medium"
+report = "c2rust-assessment.md"
+
 [conversion]
 status = "completed"
 method = "claude-sonnet-4.6"
+cargo_check = "ok"
+cargo_clippy = "ok"
+cargo_test = "ok. 59 passed; 0 failed; 0 ignored"
 modules_converted = 5
 modules_total = 5
-```
+test_count = 59
+test_pass = 59
+test_fail = 0
+notes = ""
 
-Update each converted module's status:
-```toml
 [[modules]]
 name = "utils"
 status = "converted"
+risk = "low"
+loc = 500
+
+[toolchain]
+rustc_version = "1.78.0"
+cargo_version = "1.78.0"
+ready = true
+
+[dependencies_map]
 ```
 
 Report to the user:
 - Modules translated
-- Compilation status (pass/fail, error count)
-- Test results (if tests were generated)
+- Compilation status (cargo check + clippy + test results)
 - Any issues requiring `/c2rust-refine`

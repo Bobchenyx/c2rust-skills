@@ -137,6 +137,23 @@ For each C source file you are asked to translate:
 - Follow Rust naming conventions: `snake_case` for functions/variables, `PascalCase` for types
 - Add `#[must_use]` on functions where ignoring the return value is likely a bug
 - Keep the same logical structure as C (same function grouping, similar names) for traceability
+- Code must pass `cargo clippy -- -W clippy::all` with zero warnings
+
+### Standard Trait Implementations
+
+Implement standard traits where they are appropriate for the type being defined. Do not skip traits that users would reasonably expect:
+
+- **Comparison**: `Eq`, `PartialEq`, `Ord`, `PartialOrd` — implement `Ord` first, then `PartialOrd` by delegating to `Ord` (avoids `non_canonical_partial_ord_impl` clippy lint)
+- **Hashing**: `Hash` — if you derive or implement `PartialEq`, ensure `Hash` is consistent (derive both, or implement both manually)
+- **Display**: `fmt::Display` — for types that have a natural text representation
+- **Formatting**: `fmt::Write` — for string-like types that support appending
+- **Deref**: `Deref<Target=...>` and `DerefMut` — for newtype wrappers (e.g., `Sds(Vec<u8>)` should deref to `[u8]`)
+- **Conversions**: `From<&str>`, `From<String>`, `From<&[u8]>`, `AsRef<[u8]>` — for types that wrap bytes or strings
+- **Defaults**: `Default` — for types with a natural empty/zero state
+- **Collections**: `Extend`, `FromIterator` — for collection-like types
+- **Indexing**: `Index`, `IndexMut` — for types that support element access
+
+**Avoid trait name collisions**: Do not define methods like `fn cmp(...)` or `fn eq(...)` on the type if they conflict with standard trait methods. Instead, implement the corresponding trait (`Ord`, `PartialEq`) directly.
 
 ## What NOT to Do
 

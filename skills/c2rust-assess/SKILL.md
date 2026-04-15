@@ -352,8 +352,49 @@ Write `c2rust-assessment.md` with:
 
 ### 2. Manifest Update
 
-Update `c2rust-manifest.toml`:
-- Set `[assessment]` section fields
-- Populate `[[modules]]` array with discovered modules
-- Set `[dependencies_map]` with discovered external dependencies
-- Set `[project]` fields (name, build_system, source_dir)
+Update `c2rust-manifest.toml` using **exactly** these section names and field names. Do NOT create custom sections or rename fields:
+
+```toml
+[project]
+name = "<project name>"
+source_dir = "."
+build_system = "make"                # make | cmake | autotools | meson | custom
+total_loc = 1700
+total_files = 1
+total_headers = 3
+
+[assessment]
+status = "completed"                 # pending | in_progress | completed
+date = "2026-04-15"
+mode = "quick"                       # quick | deep
+feasibility = "HIGH"                 # LOW | MEDIUM | HIGH | CRITICAL
+complexity = "low"                   # low | low-medium | medium | high | critical
+report = "c2rust-assessment.md"
+
+[plan]
+status = "pending"
+
+[conversion]
+status = "pending"
+
+[toolchain]
+rustc_version = ""
+cargo_version = ""
+ready = false
+
+[[modules]]
+name = "core"
+path = "."
+status = "assessed"                  # pending | assessed | planned | converted | verified
+risk = "low"                         # low | medium | high | critical
+loc = 1700
+dependencies = []
+hard_patterns = []
+notes = ""
+
+[dependencies_map]
+# C library = "Rust equivalent"
+# e.g. pthreads = "std::thread"
+```
+
+**Important**: You MUST use these exact section names (`[project]`, `[assessment]`, `[plan]`, `[conversion]`, `[toolchain]`, `[[modules]]`, `[dependencies_map]`). Do not create custom sections like `[package]`, `[source]`, or `[target]`.
