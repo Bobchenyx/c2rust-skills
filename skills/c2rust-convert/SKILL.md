@@ -355,11 +355,28 @@ ready = true
 [dependencies_map]
 ```
 
+### Manifest Validation
+
+After writing, verify your manifest has exactly these top-level sections (no others):
+
+```bash
+grep '^\[' c2rust-manifest.toml
+# Expected output should contain ONLY:
+# [project]
+# [assessment]
+# [conversion]
+# [[modules]]
+# [toolchain]
+# [dependencies_map]
+```
+
+If your manifest uses different section names (e.g., `[[source]]`, `[[output]]`, `[[api.dropped]]`, `[notes]`, `[package]`), **rewrite it** using the template above. Additional conversion notes should go in the `notes` field inside `[conversion]`, NOT as separate sections.
+
 ---
 
 ## Output
 
-After writing the manifest, report to the user:
+After writing and validating the manifest, report to the user:
 - Modules translated
 - Compilation status (cargo check + clippy + test results)
 - Translation notes: intentional deviations from C, patterns redesigned, assumptions made

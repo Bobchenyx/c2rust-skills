@@ -52,11 +52,13 @@ Record: build system type, version requirements, build targets, build flags.
 # Exclude directories that are not part of the core source
 EXCLUDE="-not -path '*/.git/*' -not -path '*/test*' -not -path '*/tests/*' -not -path '*/bench*' -not -path '*/fuzz*' -not -path '*/example*' -not -path '*/vendor*' -not -path '*/third_party/*' -not -path '*/unity/*'"
 
-# Count C source files and headers
+# Count C/C++ source files and headers
 echo "=== Source Files ==="
 c_count=$(eval "find . -name '*.c' $EXCLUDE" | wc -l)
-h_count=$(eval "find . -name '*.h' $EXCLUDE" | wc -l)
+cpp_count=$(eval "find . \( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' \) $EXCLUDE" | wc -l)
+h_count=$(eval "find . \( -name '*.h' -o -name '*.hpp' \) $EXCLUDE" | wc -l)
 echo "C files: $c_count"
+if [ "$cpp_count" -gt 0 ]; then echo "C++ files: $cpp_count"; fi
 echo "H files: $h_count"
 
 # Header-only library detection
