@@ -198,9 +198,19 @@ echo "Container intrusion: $(grep -rn $EXCL '\bcontainer_of\b\|offsetof' --inclu
 echo "Negative indexing:   $(grep -rn $EXCL '\[-[0-9]\]' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
 echo "Token-paste macros:  $(grep -rn $EXCL '##' --include='*.h' 2>/dev/null | grep -v '//' | wc -l)"
 echo "Fn ptr in union:     $(grep -rn $EXCL 'void\s*\*.*function\|void\s*\*.*callback\|void\s*\*.*handler' --include='*.c' --include='*.h' 2>/dev/null | wc -l)"
+
+echo ""
+echo "=== PLATFORM / SYSTEM PATTERNS ==="
+echo "Terminal/ioctl:      $(grep -rn $EXCL 'ioctl\|termios\|tcsetattr\|tcgetattr\|TIOCGWINSZ\|raw\s*mode' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "File I/O (low-level): $(grep -rn $EXCL '\bopen\b\|\bread\b\|\bwrite\b\|\bclose\b\|\bfcntl\b\|\bmmap\b' --include='*.c' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Socket/network:      $(grep -rn $EXCL '\bsocket\b\|\bbind\b\|\blisten\b\|\baccept\b\|\bconnect\b\|\bsend\b\|\brecv\b' --include='*.c' --include='*.h' 2>/dev/null | eval $EXCL_FILES | wc -l)"
+echo "Bitwise ops density: $(grep -rn $EXCL '>>\|<<\|&\s*0x\||\s*0x' --include='*.c' 2>/dev/null | eval $EXCL_FILES | wc -l)"
 ```
 
-**What to flag**: If a project uses packed structs + flexible array members + negative pointer indexing together (e.g., sds, Redis objects), the core data structure is likely designed around C-specific memory layout tricks that must be completely reimagined in Rust (typically as a newtype over `Vec<T>` or similar). Note this in the assessment as a **structural redesign required** finding — it won't inflate the pattern count but must be communicated in the plan.
+**What to flag**:
+- If a project uses packed structs + flexible array members + negative pointer indexing together (e.g., sds, Redis objects), the core data structure is designed around C-specific memory layout tricks that must be completely reimagined in Rust.
+- If a project has high terminal/ioctl or socket usage, it likely needs platform-specific Rust crates (e.g., `termion`/`crossterm` for terminal, `std::net` or `tokio` for networking).
+- High bitwise operation density (>100 in a single file) indicates crypto or protocol code where the Rust translation is mostly mechanical (`>>`, `<<`, `&`, `|` map directly) but needs careful constant/type matching.
 
 ---
 
