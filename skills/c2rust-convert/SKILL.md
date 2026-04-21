@@ -7,7 +7,7 @@ allowed-tools: [Read, Bash, Glob, Grep, Write, Edit, Agent]
 
 # C-to-Rust Translation
 
-Translate C source code to idiomatic Rust using the `c-to-rust-translator` agent (Claude Sonnet 4.6). This produces clean, safe Rust code directly — no mechanical transpilation, no unsafe-heavy output to clean up later.
+Translate C source code to idiomatic Rust using the `c-to-rust-translator` agent (Claude Sonnet). This produces clean, safe Rust code directly — no mechanical transpilation, no unsafe-heavy output to clean up later.
 
 **Completion checklist** (do NOT report success until ALL are done):
 1. Rust code written and compiles (`cargo check` clean)
@@ -343,7 +343,7 @@ report = "c2rust-assessment.md"
 
 [conversion]
 status = "completed"
-method = "claude-sonnet-4.6"
+method = "claude-sonnet"
 cargo_check = "ok"
 cargo_clippy = "ok"
 cargo_test = "ok. 59 passed; 0 failed; 0 ignored"

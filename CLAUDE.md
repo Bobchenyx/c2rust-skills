@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A Claude Code plugin providing a complete skill set for repository-level C-to-Rust conversion. It uses Claude Sonnet 4.6 as the translation engine — no mechanical transpilation. The plugin is all markdown (SKILL.md files and agent definitions); there is no compiled code or build system.
+A Claude Code plugin providing a complete skill set for repository-level C-to-Rust conversion. It uses Claude Sonnet as the translation engine — no mechanical transpilation. The plugin is all markdown (SKILL.md files and agent definitions); there is no compiled code or build system.
 
 ## Project Structure
 
@@ -16,7 +16,7 @@ skills/                      — Slash-command skills (each dir has a SKILL.md)
   c2rust-assess/             — C codebase analysis + risk scoring
   c2rust-plan/               — Conversion plan + crate structure design
   c2rust-test/               — Behavioral test suite builder
-  c2rust-convert/            — C→Rust translation via Claude Sonnet 4.6
+  c2rust-convert/            — C→Rust translation via Claude Sonnet
   c2rust-refine/             — Compilation fix + idiomatic refinement
   c2rust-verify/             — Correctness validation + quality report
 agents/                      — Subagent definitions (all model: sonnet)

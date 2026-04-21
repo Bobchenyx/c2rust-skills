@@ -4,12 +4,12 @@ A Claude Code plugin for systematic, repository-level C-to-Rust conversion.
 
 ## Overview
 
-This plugin provides a complete skill set for converting C projects to idiomatic Rust, using Claude Sonnet 4.6 as the translation engine. It covers the full lifecycle:
+This plugin provides a complete skill set for converting C projects to idiomatic Rust, using Claude Sonnet as the translation engine. It covers the full lifecycle:
 
 1. **Assessment** — Analyze codebase complexity, dependencies, and conversion risks
 2. **Planning** — Design Rust crate structure, map dependencies, determine conversion order
 3. **Testing** — Build behavioral test suite before conversion for correctness verification
-4. **Conversion** — Translate C to idiomatic Rust via Claude Sonnet 4.6 (no mechanical transpilation)
+4. **Conversion** — Translate C to idiomatic Rust via Claude Sonnet (no mechanical transpilation)
 5. **Refinement** — Fix compilation errors + improve code idiomaticity
 6. **Verification** — Validate converted code against behavioral tests and quality checks
 
@@ -22,7 +22,7 @@ This plugin provides a complete skill set for converting C projects to idiomatic
 | `/c2rust-assess` | Assess C codebase for conversion risks and complexity |
 | `/c2rust-plan` | Create conversion plan with crate structure and module ordering |
 | `/c2rust-test` | Build behavioral test suite for pre/post-conversion verification |
-| `/c2rust-convert` | Translate C to idiomatic Rust using Claude Sonnet 4.6 |
+| `/c2rust-convert` | Translate C to idiomatic Rust using Claude Sonnet |
 | `/c2rust-refine` | Fix compilation errors and improve code idiomaticity |
 | `/c2rust-verify` | Run tests, quality checks, and generate verification report |
 
@@ -30,7 +30,7 @@ This plugin provides a complete skill set for converting C projects to idiomatic
 
 The default strategy is **incremental conversion**: modules are converted one at a time, with C and Rust code coexisting through FFI boundaries. This minimizes risk — each step produces a compilable, testable project.
 
-Unlike mechanical transpilation tools, this plugin uses Claude Sonnet 4.6 to **directly translate** C source code into idiomatic Rust — with proper ownership, error handling, and Rust idioms from the start. All four subagents (translation, analysis, code review, debug) run on Sonnet.
+Unlike mechanical transpilation tools, this plugin uses Claude Sonnet to **directly translate** C source code into idiomatic Rust — with proper ownership, error handling, and Rust idioms from the start. All four subagents (translation, analysis, code review, debug) run on Sonnet.
 
 ## Shared State
 
@@ -64,7 +64,7 @@ After installation, all `/c2rust-*` commands are available when you start Claude
 /c2rust-assess --deep      # Deep analysis of your C project
 /c2rust-plan               # Generate conversion plan
 /c2rust-test               # Build test suite
-/c2rust-convert --all      # Translate C → Rust via Claude Sonnet 4.6
+/c2rust-convert --all      # Translate C → Rust via Claude Sonnet
 /c2rust-refine --all       # Fix errors + improve idiomaticity
 /c2rust-verify --all       # Validate correctness
 
@@ -104,3 +104,6 @@ Any pure C project. The translation engine reads C source files directly — it 
 
 **How do I re-convert a module?**
 Set the module's `status` back to `"planned"` in `c2rust-manifest.toml`, delete the corresponding `.rs` file, and re-run `/c2rust-convert <module-name>`.
+
+**Skills fail to write files in non-interactive (`-p`) mode?**
+In `claude -p` mode, tool permissions are restricted by default. Add `--dangerously-skip-permissions` or use `--allowedTools "Read,Bash,Glob,Grep,Write,Edit,Agent"` to grant the skills the access they need. Interactive mode (the default) is unaffected — you'll be prompted for permission as usual.

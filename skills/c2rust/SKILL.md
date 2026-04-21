@@ -85,7 +85,7 @@ I'll guide you through 7 phases:
   2. Assessment — analyze your C codebase
   3. Planning — design the Rust project structure
   4. Testing — build behavioral test suite
-  5. Conversion — translate C to idiomatic Rust (via Claude Sonnet 4.6)
+  5. Conversion — translate C to idiomatic Rust (via Claude Sonnet)
   6. Refinement — fix compilation errors and polish
   7. Verification — validate correctness
 
@@ -176,7 +176,7 @@ Test suite built.
 - [N] tests created across [M] modules
 - Golden data captured for [K] functions
 
-Next: Conversion phase will translate C to Rust via Claude Sonnet 4.6.
+Next: Conversion phase will translate C to Rust via Claude Sonnet.
 Proceed? (y/n, or /c2rust-convert to run separately)
 ```
 
