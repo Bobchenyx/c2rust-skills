@@ -43,17 +43,19 @@ All skills coordinate through `c2rust-manifest.toml` in the project root, which 
 ## Installation
 
 ```bash
-# Clone the plugin
+# Clone the repo
 git clone https://github.com/Bobchenyx/c2rust-skills.git ~/c2rust-skills
 
-# Option A: Shell alias (simplest)
-echo 'alias claude="claude --plugin-dir ~/c2rust-skills"' >> ~/.bashrc
-source ~/.bashrc
+# Option A: User-level (available in all projects)
+ln -s ~/c2rust-skills/skills/* ~/.claude/skills/
 
-# Option B: Register as local marketplace (persistent)
-claude plugin marketplace add ~/c2rust-skills
-claude plugin install c2rust-skills
+# Option B: Project-level (available only in one project)
+cd /path/to/your-c-project
+mkdir -p .claude/skills
+ln -s ~/c2rust-skills/skills/* .claude/skills/
 ```
+
+After installation, all `/c2rust-*` commands are available when you start Claude Code.
 
 ## Quick Start
 

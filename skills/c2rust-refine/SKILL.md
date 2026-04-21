@@ -138,8 +138,37 @@ cargo check 2>&1 | grep -c '^error'
 5. **Loop decision**:
 - If 0 errors → proceed to Phase B (or C if no semantic issues)
 - If errors decreased → continue loop (next iteration)
-- If errors unchanged for 3 iterations → launch a `debug-assistant` agent with the full error output and source context to diagnose root causes. If the agent identifies fixes, apply them and continue the loop. If it identifies semantic issues, move them to Phase B.
-- If max iterations reached → stop, report remaining
+- If errors unchanged for 3 iterations → enter **fallback cascade** (see below)
+- If max iterations reached → enter **fallback cascade** for remaining errors
+
+### Fallback Cascade
+
+When the fix loop stalls on a module (errors unchanged for 3 consecutive iterations or max iterations reached):
+
+**Step 1 — Debug agent escalation**: Launch a `debug-assistant` agent with the full error output and source context. If the agent identifies fixes, apply them and resume the loop. If it identifies semantic issues, move them to Phase B.
+
+**Step 2 — Error isolation**: If errors persist after the debug agent, check whether errors are confined to specific modules:
+```bash
+grep '^error' /tmp/cargo-errors.txt | sed 's/.*--> \([^:]*\):.*/\1/' | sort -u
+```
+
+**Step 3 — Per-module decision** (present to user): For each module with unresolvable errors, offer:
+
+1. **Partial rollback** — Revert the module's Rust code to the pre-refinement state, mark `status = "converted"` in the manifest. The module can be re-attempted later with different design decisions.
+2. **FFI degradation** — Retain the original C source for this module and wrap it with FFI bindings. Mark `status = "ffi-retained"` in the manifest. Other converted modules continue through the pipeline.
+3. **Skip and continue** — Leave the module in its current broken state, mark `status = "refine-failed"`, record the remaining errors in the manifest, and proceed to refine the next module.
+
+**Per-module retry ceiling**: Track refinement attempts per module. After 3 failed attempts on the same module (across separate `/c2rust-refine` invocations), default to option 3 (skip) and warn the user that this module likely needs manual intervention.
+
+**Manifest recording for failed modules**:
+```toml
+[[modules]]
+name = "problem_module"
+status = "refine-failed"           # or "ffi-retained"
+refine_attempts = 3
+refine_errors = ["E0499 at src/parser.rs:42", "E0106 at src/parser.rs:87"]
+notes = "Borrow conflict in parse_tree — needs ownership redesign"
+```
 
 ### Common Batch Fixes
 

@@ -219,6 +219,35 @@ echo $? > tests/common/golden_data/module_exit_code.txt
 
 ---
 
+## Step 7: Identify Test Coverage Gaps
+
+Not all C behavior can be captured by automated tests. Read `c2rust-assessment.md` (if it exists) and cross-reference each module's hard/blocking patterns against the list below.
+
+### Patterns outside test coverage
+
+| Pattern | Why It's Hard to Test | Mitigation |
+|---------|----------------------|------------|
+| **Global mutable state** | Tests may pass or fail depending on execution order; state leaks between tests | Note affected modules; recommend `#[serial_test::serial]` after conversion |
+| **Signal handlers** (`signal`, `sigaction`) | Cannot reliably trigger and capture signal behavior in unit tests | Document expected signal behavior; verify manually |
+| **Filesystem side effects** | Tests depend on filesystem state; non-deterministic across platforms | Use `tempfile` crate for isolation; note as partial coverage |
+| **setjmp/longjmp** | Non-local control flow cannot be captured in input→output behavioral tests | Skip behavioral tests for these paths; verify via code review after conversion |
+| **Thread-dependent behavior** | Race conditions and lock ordering are non-deterministic | Note as untestable; recommend `loom` or `shuttle` for post-conversion verification |
+| **Hardware/platform-specific** (`ioctl`, inline asm, SIMD) | Behavior depends on specific hardware or OS | Document platform assumptions; test only on target platform |
+
+### Per-module coverage flags
+
+For each module, check whether it contains any of the above patterns (from the assessment's hard/blocking pattern list). If so, add a `coverage_gaps` note:
+
+```
+Module "core": 8 global mutable variables → test coverage is PARTIAL (execution-order-dependent state)
+Module "network": signal handlers × 3 → test coverage EXCLUDES signal behavior
+Module "crypto": inline asm × 2 → BLOCKING pattern, no behavioral tests generated
+```
+
+Include these flags in the test manifest output so users know exactly what the tests guarantee and what they don't.
+
+---
+
 ## Output
 
 ### 1. Test Files
@@ -227,16 +256,17 @@ Write test files to the `tests/` directory following the structure above.
 
 ### 2. Test Manifest
 
-Write a summary of all tests created:
+Write a summary of all tests created, **including coverage gap flags**:
 ```markdown
 # Test Manifest
 
-| Module | Tests | Type | Status |
-|--------|-------|------|--------|
-| utils | 12 | unit | ready |
-| parser | 8 | integration + golden | ready |
-| core | 15 | integration + property | ready |
-| network | 5 | FFI boundary | pending (needs C compilation) |
+| Module | Tests | Type | Coverage Gaps | Status |
+|--------|-------|------|---------------|--------|
+| utils | 12 | unit | none | ready |
+| parser | 8 | integration + golden | none | ready |
+| core | 15 | integration + property | global state (8 vars) — partial | ready |
+| network | 5 | FFI boundary | signal handlers (3) — excluded | ready |
+| crypto | 0 | — | inline asm — BLOCKING | skipped |
 ```
 
 ### 3. Manifest Update
