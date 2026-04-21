@@ -30,7 +30,7 @@ This plugin provides a complete skill set for converting C projects to idiomatic
 
 The default strategy is **incremental conversion**: modules are converted one at a time, with C and Rust code coexisting through FFI boundaries. This minimizes risk — each step produces a compilable, testable project.
 
-Unlike mechanical transpilation tools, this plugin uses Claude Sonnet 4.6 to **directly translate** C source code into idiomatic Rust — with proper ownership, error handling, and Rust idioms from the start.
+Unlike mechanical transpilation tools, this plugin uses Claude Sonnet 4.6 to **directly translate** C source code into idiomatic Rust — with proper ownership, error handling, and Rust idioms from the start. All four subagents (translation, analysis, code review, debug) run on Sonnet.
 
 ## Shared State
 

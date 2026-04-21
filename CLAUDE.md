@@ -19,8 +19,8 @@ skills/                      — Slash-command skills (each dir has a SKILL.md)
   c2rust-convert/            — C→Rust translation via Claude Sonnet 4.6
   c2rust-refine/             — Compilation fix + idiomatic refinement
   c2rust-verify/             — Correctness validation + quality report
-agents/                      — Subagent definitions (launched by skills)
-  c-to-rust-translator.md    — Translation agent (model: sonnet)
+agents/                      — Subagent definitions (all model: sonnet)
+  c-to-rust-translator.md    — Translation agent
   c-analyzer.md              — Deep analysis agent (--deep mode)
   rust-reviewer.md           — Code quality reviewer
   debug-assistant.md         — Compilation error fixer
