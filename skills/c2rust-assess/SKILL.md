@@ -125,7 +125,7 @@ done
 
 ## Phase 4: Unsafe Pattern Scanning
 
-Scan for patterns from [references/c-pattern-catalog.md](references/c-pattern-catalog.md).
+**Before scanning, read [references/c-pattern-catalog.md](references/c-pattern-catalog.md)** to load the pattern classification table (BLOCKING / HARD / MODERATE). You will need it to classify each grep match below.
 
 **Important**: All pattern greps MUST exclude test, bench, fuzz, vendor, and example directories. Use this exclude pattern on every grep:
 
@@ -225,14 +225,15 @@ echo "Bitwise ops density: $(grep -rn $EXCL '>>\|<<\|&\s*0x\||\s*0x' --include='
 
 Identify logical modules using the following strategies.
 
-### Fast path: Single-file and header-only projects
+### Fast path: Small projects (≤ 5 files AND < 2,000 LOC)
 
-If the project has 0-1 source files, skip module detection entirely:
+If the project is small enough, skip module detection and treat everything as a single module:
 
 ```bash
 c_file_count=$(eval "find . -name '*.c' $EXCLUDE" | wc -l)
-if [ "$c_file_count" -le 1 ]; then
-  echo "Single-module project — no decomposition needed"
+total_c_loc=$(eval "find . -name '*.c' $EXCLUDE" -exec cat {} + 2>/dev/null | wc -l)
+if [ "$c_file_count" -le 5 ] && [ "$total_c_loc" -lt 2000 ]; then
+  echo "Small project ($c_file_count files, $total_c_loc LOC) — treating as single module"
 fi
 # Also handle header-only libraries (0 .c files, implementation in .h)
 if [ "$c_file_count" -eq 0 ]; then
@@ -243,7 +244,7 @@ if [ "$c_file_count" -eq 0 ]; then
 fi
 ```
 
-Record as 1 module with all LOC (including .h LOC for header-only projects). Proceed directly to risk scoring. No dependency graph, no ordering needed.
+Record as 1 module with all LOC (including .h LOC for header-only projects). Proceed directly to risk scoring. No dependency graph, no module ordering needed.
 
 ### For multi-file projects
 
@@ -344,7 +345,7 @@ After agents complete, read their key findings and incorporate into the assessme
 
 ## Phase 7: Risk Score Calculation
 
-Using the methodology from [references/complexity-metrics.md](references/complexity-metrics.md), calculate per-module risk scores.
+**First, read [references/complexity-metrics.md](references/complexity-metrics.md)** for the density formula and risk thresholds. Apply the formula below using values from that document:
 
 **Important**: Use the benign/dangerous classification from Phase 4. Do NOT treat all moderate patterns equally.
 
@@ -452,7 +453,10 @@ status = "assessed"                  # pending | assessed | planned | tested | c
 risk = "low"                         # low | medium | high | critical
 loc = 1700
 dependencies = []
+blocking_patterns = []               # patterns that CANNOT be auto-translated (inline asm, computed goto, setjmp)
 hard_patterns = []
+ffi_boundary = false                 # set true when blocking_patterns is non-empty
+clippy_allow = []
 notes = ""
 
 [dependencies_map]
@@ -460,4 +464,17 @@ notes = ""
 # e.g. pthreads = "std::thread"
 ```
 
+**BLOCKING → FFI rule**: If a module has any BLOCKING patterns (inline assembly, computed goto, setjmp/longjmp), set `ffi_boundary = true`. This module MUST be kept as C with FFI bindings — it will be excluded from the convert queue.
+
 **Important**: You MUST use these exact section names (`[project]`, `[assessment]`, `[plan]`, `[tests]`, `[conversion]`, `[refinement]`, `[verification]`, `[toolchain]`, `[[modules]]`, `[dependencies_map]`). Do not create custom sections like `[package]`, `[source]`, or `[target]`.
+
+After writing, validate the manifest:
+```bash
+allowed="project assessment plan tests conversion refinement verification toolchain modules dependencies_map"
+for section in $(grep '^\[' c2rust-manifest.toml | tr -d '[]' | sort -u); do
+  if ! echo "$allowed" | grep -qw "$section"; then
+    echo "ERROR: Invalid manifest section [$section]. Allowed: $allowed"
+    echo "Rewrite the manifest using only canonical sections."
+  fi
+done
+```

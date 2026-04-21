@@ -123,7 +123,7 @@ echo "Total errors: $(grep -c '^error' /tmp/cargo-errors.txt)"
 
 3. **Apply mechanical fixes**:
 
-Read the error-fix-catalog reference: [references/error-fix-catalog.md](references/error-fix-catalog.md)
+**Before applying fixes, read [references/error-fix-catalog.md](references/error-fix-catalog.md)** to load the fix patterns for each error code. Apply the matching pattern for each error below:
 
 For each mechanical error:
 - Read the file and error location
@@ -235,7 +235,7 @@ Wait for user's choice, then apply it.
 
 **Goal**: Transform compiling but C-like Rust into idiomatic Rust. Only proceed after code compiles.
 
-Reference: [references/unsafe-to-safe.md](references/unsafe-to-safe.md)
+**Read [references/unsafe-to-safe.md](references/unsafe-to-safe.md) now.** Apply each applicable transformation from that document in the passes below:
 
 ### Refinement passes (in order):
 
@@ -272,6 +272,8 @@ cargo clippy -- -W clippy::all 2>&1 | head -100
 # Auto-fix what clippy can
 cargo clippy --fix --allow-dirty -- -W clippy::all
 ```
+
+If a warning cannot be fixed without breaking behavioral equivalence or FFI compatibility, add it to the module's `clippy_allow` list in the manifest with a justification, then add `#[allow(clippy::...)]` with a `// CLIPPY:` comment in the code. All non-allow-listed warnings must still reach 0.
 
 #### Pass 8: Final unsafe audit
 ```bash
@@ -314,6 +316,17 @@ Update module statuses:
 [[modules]]
 name = "utils"
 status = "refined"
+```
+
+After writing, validate the manifest:
+```bash
+allowed="project assessment plan tests conversion refinement verification toolchain modules dependencies_map"
+for section in $(grep '^\[' c2rust-manifest.toml | tr -d '[]' | sort -u); do
+  if ! echo "$allowed" | grep -qw "$section"; then
+    echo "ERROR: Invalid manifest section [$section]. Allowed: $allowed"
+    echo "Rewrite the manifest using only canonical sections."
+  fi
+done
 ```
 
 ### 4. Next Step

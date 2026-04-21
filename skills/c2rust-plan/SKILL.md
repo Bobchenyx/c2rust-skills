@@ -75,7 +75,7 @@ rust-project/
 
 ## Step 2: Dependency Mapping
 
-Using [references/crate-mapping.md](references/crate-mapping.md), map each external C library dependency to a Rust equivalent.
+**Read [references/crate-mapping.md](references/crate-mapping.md) now.** For each C library in the dependency list, look up its Rust equivalent in the mapping table.
 
 For each dependency, decide:
 1. **Pure Rust replacement** — Preferred when mature and compatible
@@ -103,7 +103,7 @@ Build a dependency graph between modules and compute conversion order.
 1. **Leaf modules first**: Modules with no internal dependencies
 2. **Low risk first**: Among equally independent modules, convert lowest risk first
 3. **High-value dependencies early**: Modules that many others depend on
-4. **Blocking patterns last**: Modules with BLOCKING patterns may stay as C
+4. **Modules with `ffi_boundary = true` MUST stay as C.** Do not include them in the conversion order. Design FFI bindings for them in Step 4 instead
 
 ### Algorithm:
 1. Build adjacency list from module dependencies
@@ -147,7 +147,7 @@ For incremental conversion, define how C and Rust code will interact during the 
 - `cc` crate usage for C compilation
 - Linker configuration for mixed binary
 
-Reference [references/ffi-patterns.md](references/ffi-patterns.md) for FFI design patterns.
+**Read [references/ffi-patterns.md](references/ffi-patterns.md) now** for the FFI design patterns used below.
 
 ---
 
@@ -222,3 +222,14 @@ Update each `[[modules]]` entry with:
 - `rust_crate_mapping` for external deps
 - Conversion order position
 - FFI boundary specification
+
+After writing, validate the manifest:
+```bash
+allowed="project assessment plan tests conversion refinement verification toolchain modules dependencies_map"
+for section in $(grep '^\[' c2rust-manifest.toml | tr -d '[]' | sort -u); do
+  if ! echo "$allowed" | grep -qw "$section"; then
+    echo "ERROR: Invalid manifest section [$section]. Allowed: $allowed"
+    echo "Rewrite the manifest using only canonical sections."
+  fi
+done
+```

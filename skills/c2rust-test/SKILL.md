@@ -286,3 +286,14 @@ Update each `[[modules]]` entry that had tests created:
 name = "utils"
 status = "tested"
 ```
+
+After writing, validate the manifest:
+```bash
+allowed="project assessment plan tests conversion refinement verification toolchain modules dependencies_map"
+for section in $(grep '^\[' c2rust-manifest.toml | tr -d '[]' | sort -u); do
+  if ! echo "$allowed" | grep -qw "$section"; then
+    echo "ERROR: Invalid manifest section [$section]. Allowed: $allowed"
+    echo "Rewrite the manifest using only canonical sections."
+  fi
+done
+```
