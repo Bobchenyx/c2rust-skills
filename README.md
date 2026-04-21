@@ -55,8 +55,6 @@ claude plugin marketplace add ~/c2rust-skills
 claude plugin install c2rust-skills
 ```
 
-See [USAGE.md](USAGE.md) for detailed installation options and full documentation (in Chinese).
-
 ## Quick Start
 
 ```
@@ -81,3 +79,26 @@ See [USAGE.md](USAGE.md) for detailed installation options and full documentatio
 - `gcc` / `cc` — C compiler (optional, for incremental FFI mode)
 - `bindgen` — C headers → Rust FFI bindings (optional, for incremental mode)
 - `cbindgen` — Rust → C headers (optional, for incremental mode)
+
+## FAQ
+
+**The translated Rust code doesn't compile?**
+This is normal. Use `/c2rust-refine` to auto-fix most mechanical errors. Semantic issues that require design decisions will be presented to you interactively.
+
+**A module is rated CRITICAL risk?**
+Keep it as C with FFI bindings during incremental conversion. Mark it as an "FFI boundary" in the plan phase. Rewrite it manually later.
+
+**The refine phase is stuck in a loop?**
+If errors stop decreasing after 3 iterations, switch to `--interactive` mode to inspect each issue individually.
+
+**How do I handle BLOCKING patterns (inline assembly, computed goto, setjmp)?**
+These cannot be auto-translated. Keep modules containing them as C via FFI, or manually rewrite: inline asm → `core::arch::asm!`, computed goto → match/enum state machine, setjmp/longjmp → `Result<T, E>`.
+
+**Is `unsafe` in the translated code normal?**
+Claude-translated Rust rarely uses `unsafe`. It mainly appears at FFI boundaries with unconverted C modules. The refine phase further minimizes `unsafe` usage and adds `// SAFETY:` comments.
+
+**What C projects are supported?**
+Any pure C project. The translation engine reads C source files directly — it doesn't depend on a specific build system or require compiling the C code. C++ is not supported.
+
+**How do I re-convert a module?**
+Set the module's `status` back to `"planned"` in `c2rust-manifest.toml`, delete the corresponding `.rs` file, and re-run `/c2rust-convert <module-name>`.
