@@ -61,7 +61,7 @@ allowed-tools: [Read, Bash, Glob, Grep, Write, Edit, Agent]
 
 ## Agent Definitions
 
-Agent markdown files in `agents/` have frontmatter specifying `name`, `description`, `model` (optional), and `tools`. The `c-to-rust-translator` agent explicitly sets `model: sonnet` to use Claude Sonnet 4.6 for translation.
+Agent markdown files in `agents/` have frontmatter specifying `name`, `description`, `model` (optional), and `tools`. All four agents set `model: sonnet` — translation, analysis, review, and error fixing are all well within Sonnet's capability. The skills that genuinely benefit from a higher-tier session model are `c2rust-plan` (architectural design) and `c2rust-refine` Phase B (semantic ownership/error-handling decisions).
 
 ## Key Conventions
 

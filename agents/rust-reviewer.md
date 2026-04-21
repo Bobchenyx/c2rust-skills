@@ -1,6 +1,7 @@
 ---
 name: rust-reviewer
 description: Review converted Rust code for quality, idiomaticity, and safety. Specializes in identifying non-idiomatic patterns, suggesting ownership improvements, and reviewing public API design.
+model: sonnet
 tools: [Read, Glob, Grep, Bash]
 ---
 

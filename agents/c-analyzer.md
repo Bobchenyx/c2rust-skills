@@ -1,6 +1,7 @@
 ---
 name: c-analyzer
 description: Deep analysis agent for C code during conversion assessment. Use when c2rust-assess runs in --deep mode. Specializes in call graph tracing, global state analysis, macro complexity, and type pattern identification.
+model: sonnet
 tools: [Read, Glob, Grep, Bash]
 ---
 

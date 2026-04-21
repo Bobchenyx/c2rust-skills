@@ -1,6 +1,7 @@
 ---
 name: debug-assistant
 description: Diagnose and fix Rust compilation errors in C-to-Rust translated code. Specializes in rustc error interpretation, type conversion fixes, lifetime resolution, and cross-module consistency issues.
+model: sonnet
 tools: [Read, Glob, Grep, Bash, Edit]
 ---
 
