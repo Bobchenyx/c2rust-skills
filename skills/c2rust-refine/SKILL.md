@@ -138,7 +138,7 @@ cargo check 2>&1 | grep -c '^error'
 5. **Loop decision**:
 - If 0 errors → proceed to Phase B (or C if no semantic issues)
 - If errors decreased → continue loop (next iteration)
-- If errors unchanged for 3 iterations → stop loop, report remaining errors
+- If errors unchanged for 3 iterations → launch a `debug-assistant` agent with the full error output and source context to diagnose root causes. If the agent identifies fixes, apply them and continue the loop. If it identifies semantic issues, move them to Phase B.
 - If max iterations reached → stop, report remaining
 
 ### Common Batch Fixes

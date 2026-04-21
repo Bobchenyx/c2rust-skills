@@ -105,7 +105,7 @@ dangerous_moderate = backward_goto + function_pointer + complex_conditional_comp
 
 adjusted_moderate = benign_moderate * 0.5 + dangerous_moderate * 2
 
-density = (blocking_count * 10 + hard_count * 5 + adjusted_moderate) / total_loc * 1000
+density = (blocking_count * 10 + hard_count * 5 + adjusted_moderate) / module_loc * 1000
 ```
 
 **Key distinction**: A `goto cleanup;` (forward, cleanup pattern) is EASY for Claude — it maps directly to `?` + RAII. A computed `goto *table[i]` is BLOCKING. Both match `grep '\bgoto\b'` but have vastly different conversion difficulty. The assess skill should classify gotos by direction before counting.

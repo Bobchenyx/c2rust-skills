@@ -1,13 +1,13 @@
 ---
 name: c2rust
-description: Main orchestrator for C-to-Rust repository conversion. Guides through the full conversion pipeline from assessment to verification. Use to start a new conversion, check progress, or resume from where you left off. Triggers on "convert C to Rust", "c2rust pipeline", "start conversion", "conversion status".
+description: Main pipeline guide for C-to-Rust repository conversion. Interactively walks through the full conversion pipeline from assessment to verification, prompting the user to invoke each phase skill. Use to start a new conversion, check progress, or resume from where you left off. Triggers on "convert C to Rust", "c2rust pipeline", "start conversion", "conversion status".
 argument-hint: [status|resume|assess|plan|test|convert|refine|verify]
 allowed-tools: [Read, Bash, Glob, Grep, Write, Edit, Agent]
 ---
 
-# C-to-Rust Conversion Orchestrator
+# C-to-Rust Conversion Pipeline Guide
 
-Main entry point for repository-level C-to-Rust conversion. This skill coordinates the full pipeline.
+Main entry point for repository-level C-to-Rust conversion. This skill tracks progress and guides the user through each phase interactively, prompting them to invoke the corresponding phase skill (`/c2rust-assess`, `/c2rust-plan`, etc.) at each step.
 
 ## Arguments
 
@@ -143,7 +143,7 @@ If prerequisites not met, inform user and suggest the prerequisite phase.
 
 ## Step 3: Phase Execution
 
-For each phase, use the corresponding skill's logic. The orchestrator provides context continuity between phases:
+For each phase, prompt the user to invoke the corresponding skill (e.g., "Run `/c2rust-assess` to begin assessment"). Provide context continuity between phases by summarizing what was accomplished and what comes next:
 
 ### Phase transitions:
 

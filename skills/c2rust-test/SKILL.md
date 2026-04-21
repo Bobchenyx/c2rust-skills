@@ -249,3 +249,10 @@ test_count = 40
 test_dir = "tests/"
 golden_data_dir = "tests/common/golden_data/"
 ```
+
+Update each `[[modules]]` entry that had tests created:
+```toml
+[[modules]]
+name = "utils"
+status = "tested"
+```

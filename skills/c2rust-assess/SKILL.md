@@ -58,7 +58,14 @@ c_count=$(eval "find . -name '*.c' $EXCLUDE" | wc -l)
 cpp_count=$(eval "find . \( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' \) $EXCLUDE" | wc -l)
 h_count=$(eval "find . \( -name '*.h' -o -name '*.hpp' \) $EXCLUDE" | wc -l)
 echo "C files: $c_count"
-if [ "$cpp_count" -gt 0 ]; then echo "C++ files: $cpp_count"; fi
+if [ "$cpp_count" -gt 0 ]; then
+  echo "C++ files: $cpp_count"
+  echo ""
+  echo "WARNING: $cpp_count C++ file(s) detected. This plugin only supports C-to-Rust conversion."
+  echo "C++ files (.cpp, .cc, .cxx) will be excluded from analysis and cannot be converted."
+  echo "If this is primarily a C++ project, this plugin is not the right tool."
+  echo ""
+fi
 echo "H files: $h_count"
 
 # Header-only library detection
@@ -421,7 +428,16 @@ report = "c2rust-assessment.md"
 [plan]
 status = "pending"
 
+[tests]
+status = "pending"
+
 [conversion]
+status = "pending"
+
+[refinement]
+status = "pending"
+
+[verification]
 status = "pending"
 
 [toolchain]
@@ -432,7 +448,7 @@ ready = false
 [[modules]]
 name = "core"
 path = "."
-status = "assessed"                  # pending | assessed | planned | converted | verified
+status = "assessed"                  # pending | assessed | planned | tested | converted | refined | verified
 risk = "low"                         # low | medium | high | critical
 loc = 1700
 dependencies = []
@@ -444,4 +460,4 @@ notes = ""
 # e.g. pthreads = "std::thread"
 ```
 
-**Important**: You MUST use these exact section names (`[project]`, `[assessment]`, `[plan]`, `[conversion]`, `[toolchain]`, `[[modules]]`, `[dependencies_map]`). Do not create custom sections like `[package]`, `[source]`, or `[target]`.
+**Important**: You MUST use these exact section names (`[project]`, `[assessment]`, `[plan]`, `[tests]`, `[conversion]`, `[refinement]`, `[verification]`, `[toolchain]`, `[[modules]]`, `[dependencies_map]`). Do not create custom sections like `[package]`, `[source]`, or `[target]`.

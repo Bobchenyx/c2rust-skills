@@ -552,7 +552,7 @@ zlib = "flate2"
 ### 模块状态流转
 
 ```
-pending → assessed → planned → tested → converting → converted → refining → refined → verified
+pending → assessed → planned → tested → converted → refined → verified
 ```
 
 ---
@@ -724,6 +724,20 @@ Claude 翻译产出的 Rust 代码通常 unsafe 很少，主要出现在 FFI 边
 ### Q: 翻译引擎用的是什么模型？
 
 使用 Claude Sonnet 4.6（`model: sonnet`），通过 `c-to-rust-translator` Agent 执行。该 Agent 内置了全面的 C→Rust 类型映射、内存管理模式、错误处理模式等翻译规则。
+
+### Q: 如何重新转换某个模块？
+
+如果对某个模块的翻译结果不满意，可以手动回退：
+
+1. 在 `c2rust-manifest.toml` 中将该模块的 `status` 改回 `"planned"` 或 `"assessed"`
+2. 删除对应的 `.rs` 输出文件
+3. 重新运行 `/c2rust-convert <module-name>`
+
+目前没有自动回退命令，需要手动编辑 manifest。
+
+### Q: 支持 C++ 项目吗？
+
+不支持。本插件仅支持纯 C 项目的转换。评估阶段会检测 C++ 文件（`.cpp`, `.cc`, `.cxx`）并发出警告，但不会尝试翻译 C++ 代码。如果项目混合了 C 和 C++，只有 C 文件会被处理。
 
 ---
 

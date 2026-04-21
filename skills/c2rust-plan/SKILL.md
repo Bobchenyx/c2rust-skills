@@ -218,6 +218,7 @@ pthread = "std::thread"
 ```
 
 Update each `[[modules]]` entry with:
+- `status = "planned"`
 - `rust_crate_mapping` for external deps
 - Conversion order position
 - FFI boundary specification
