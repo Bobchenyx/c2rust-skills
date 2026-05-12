@@ -28,7 +28,7 @@ This plugin provides a complete skill set for converting C projects to idiomatic
 
 ## Conversion Strategy
 
-The default strategy is **incremental conversion**: modules are converted one at a time, with C and Rust code coexisting through FFI boundaries. This minimizes risk — each step produces a compilable, testable project.
+The default strategy is **single-pass conversion**: all non-BLOCKING modules are translated in one pass. Modules containing BLOCKING patterns (inline assembly, computed goto, setjmp/longjmp) are detected during assessment, marked `ffi_boundary = true` in the manifest, and kept as C with hand-written FFI bindings. Conversion proceeds for everything else.
 
 Unlike mechanical transpilation tools, this plugin uses Claude Sonnet to **directly translate** C source code into idiomatic Rust — with proper ownership, error handling, and Rust idioms from the start. All four subagents (translation, analysis, code review, debug) run on Sonnet.
 
@@ -78,9 +78,9 @@ After installation, all `/c2rust-*` commands are available when you start Claude
 
 - `rustc` / `cargo` — Rust toolchain (>= 1.70.0)
 - `clippy` — Rust linter (bundled with rustup)
-- `gcc` / `cc` — C compiler (optional, for incremental FFI mode)
-- `bindgen` — C headers → Rust FFI bindings (optional, for incremental mode)
-- `cbindgen` — Rust → C headers (optional, for incremental mode)
+- `gcc` / `cc` — C compiler (optional, only if BLOCKING modules need to be kept as C via FFI)
+- `bindgen` — C headers → Rust FFI bindings (optional, same condition)
+- `cbindgen` — Rust → C headers (optional, same condition)
 
 ## FAQ
 
@@ -88,7 +88,7 @@ After installation, all `/c2rust-*` commands are available when you start Claude
 This is normal. Use `/c2rust-refine` to auto-fix most mechanical errors. Semantic issues that require design decisions will be presented to you interactively.
 
 **A module is rated CRITICAL risk?**
-Keep it as C with FFI bindings during incremental conversion. Mark it as an "FFI boundary" in the plan phase. Rewrite it manually later.
+Keep it as C with FFI bindings. Mark it as an "FFI boundary" in the plan phase (set `ffi_boundary = true` in the manifest). Rewrite it manually later.
 
 **The refine phase is stuck in a loop?**
 If errors stop decreasing after 3 iterations, switch to `--interactive` mode to inspect each issue individually.
