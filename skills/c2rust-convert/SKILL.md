@@ -227,21 +227,6 @@ Provide the **already-written foundation types** as context to every translation
 - No duplicate/conflicting type definitions
 - Agents can write code that compiles together on the first try
 
-### For incremental conversion with FFI
-
-If some modules remain as C during transition:
-
-1. Create a `ffi.rs` module with `extern "C"` declarations for unconverted C functions
-2. Create a `build.rs` to compile remaining C code via `cc` crate:
-```rust
-fn main() {
-    cc::Build::new()
-        .file("c-src/unconverted.c")
-        .include("c-src")
-        .compile("c_remaining");
-}
-```
-
 ---
 
 ## Step 5: Write Output Files
@@ -266,39 +251,6 @@ pub use module_a::PublicType;
 ```
 
 ---
-
-## Step 5b: FFI Glue Update (Incremental Mode Only)
-
-Skip this step if the project is using full one-shot conversion (all modules converting at once).
-
-After each module is converted, update the FFI boundary so the mixed C+Rust project continues to build:
-
-1. **Regenerate bindings** for remaining C code:
-```bash
-# If unconverted C modules exist, regenerate Rust bindings
-bindgen c-src/remaining_header.h -o src/ffi_bindings.rs
-```
-
-2. **Update `build.rs`** to compile only the remaining C source files (remove the newly-converted module):
-```rust
-cc::Build::new()
-    .files(&["c-src/still_c_module.c"])
-    .include("c-src")
-    .compile("c_remaining");
-```
-
-3. **Update `ffi.rs`** — remove `extern "C"` declarations for functions that now have native Rust implementations
-
-4. **Verify mixed build** — `cargo build` must succeed with the updated C+Rust combination
-
-Track in the manifest:
-```toml
-[conversion]
-ffi_modules_remaining = ["crypto", "hardware"]
-```
-
----
-
 ## Step 6: Compilation + Quality Gate
 
 All three checks must pass clean before the conversion is considered complete. This is a hard gate — do NOT report success if any check has errors or warnings.

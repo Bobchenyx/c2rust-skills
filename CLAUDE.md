@@ -74,7 +74,7 @@ Agent markdown files in `agents/` have frontmatter specifying `name`, `descripti
 - **Directory exclusions**: All grep-based pattern scanning in assess must exclude test, bench, fuzz, vendor, example, third_party, unity, and contrib directories. Use the `$EXCL` and `$EXCL_FILES` variables defined in the assess skill.
 - **Pattern classification**: Raw grep counts for goto and void* over-inflate risk. The assess skill classifies patterns as benign vs dangerous (e.g., forward-goto-to-cleanup is benign; backward goto is dangerous) before computing risk scores.
 - **Small project fast path**: For projects with ≤ 5 files AND < 2,000 LOC, assess skips module decomposition and convert uses a single agent call instead of the multi-phase foundation-first strategy.
-- **FFI glue ownership**: The convert skill manages FFI boundaries during incremental conversion (Step 5b). After each module is converted, it regenerates bindings, updates build.rs, and verifies the mixed build.
+- **FFI boundary at BLOCKING modules only**: Modules with BLOCKING patterns (inline asm, computed goto, setjmp) are marked `ffi_boundary = true` in the manifest and kept as C with hand-written FFI bindings. The pipeline does NOT support mid-pipeline mixed builds — convert processes all non-BLOCKING modules in a single pass.
 - **Generated artifacts** (not tracked in git): `c2rust-manifest.toml`, `c2rust-assessment.md`, `c2rust-plan.md`, `c2rust-verification-report.md`.
 
 ## End-user docs

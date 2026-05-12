@@ -1,20 +1,12 @@
 ---
 name: c2rust-plan
 description: Create a conversion plan for C-to-Rust migration. Designs Rust crate structure, maps C library dependencies to Rust crates, and determines module conversion order. Use after c2rust-assess, or when the user mentions "conversion plan", "crate structure", "migration plan".
-argument-hint: [--incremental|--full]
 allowed-tools: [Read, Bash, Glob, Grep, Write, Agent]
 ---
 
 # Conversion Planning
 
 Design a concrete plan for converting the assessed C codebase to Rust.
-
-## Arguments
-
-The user invoked this with: $ARGUMENTS
-
-- `--incremental`: Incremental conversion with FFI boundaries (default)
-- `--full`: Full one-shot conversion (recommended only for small projects)
 
 ## Prerequisites
 
@@ -150,32 +142,7 @@ For incremental conversion, define how C and Rust code will interact during the 
 **Read [references/ffi-patterns.md](references/ffi-patterns.md) now** for the FFI design patterns used below.
 
 ---
-
-## Step 5: Build System Migration Plan
-
-Design the transition from C build system to Cargo:
-
-### Phase 1 (Start): Cargo wraps C build
-```toml
-# Cargo.toml
-[build-dependencies]
-cc = "1.0"
-bindgen = "0.69"
-```
-
-### Phase 2 (During): Mixed build
-- Cargo compiles Rust code
-- `build.rs` compiles remaining C code via `cc`
-- `bindgen` generates bindings for unconverted C headers
-
-### Phase 3 (End): Pure Cargo
-- All code is Rust
-- No `build.rs` needed (or minimal)
-- External C libraries through `-sys` crates
-
----
-
-## Step 6: Define Success Criteria
+## Step 5: Define Success Criteria
 
 For each module conversion milestone:
 - [ ] `cargo check` passes (no compilation errors)
