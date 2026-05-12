@@ -163,7 +163,6 @@ Write `c2rust-plan.md` with the complete plan including:
 - Dependency mapping table
 - Conversion order with milestones
 - FFI boundary specifications
-- Build system migration plan
 - Success criteria per module
 
 ### 2. Manifest Update
