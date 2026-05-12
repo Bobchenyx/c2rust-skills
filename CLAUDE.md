@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Claude Code plugin providing a complete skill set for repository-level C-to-Rust conversion. It uses Claude Sonnet as the translation engine — no mechanical transpilation. The plugin is all markdown (SKILL.md files and agent definitions); there is no compiled code or build system.
 
+## Working on this repo
+
+This repo has no compiled code, no test suite, and no lint config of its own — it is pure markdown (SKILL.md and agent definitions). Validation is end-to-end: install the skills into `~/.claude/skills/` (see README for symlink commands) and exercise the `/c2rust-*` commands against a real C project. The `cargo` / `clippy` / `cargo test` commands referenced inside the skills run in the **target** C project, not here.
+
 ## Project Structure
 
 ```
@@ -65,9 +69,14 @@ Agent markdown files in `agents/` have frontmatter specifying `name`, `descripti
 
 ## Key Conventions
 
-- **Clippy hard gate**: `cargo clippy -- -W clippy::all` must pass with 0 warnings before conversion is reported complete. This is enforced in both c2rust-convert (Step 6b) and c2rust-refine (Phase C).
+- **Convert completion checklist** (enforced in c2rust-convert; do not report success until all four pass): `cargo check` clean → `cargo clippy -- -W clippy::all` 0 warnings → `cargo test` green (inline unit tests from the translator; integration tests from `/c2rust-test` are validated later in `/c2rust-verify`) → `c2rust-manifest.toml` written with the exact section names listed above. The clippy gate is re-checked in c2rust-refine (Phase C).
+- **BLOCKING patterns stay as C**: inline assembly, computed `goto`, and `setjmp`/`longjmp` cannot be auto-translated. Modules containing them must be kept as C across an FFI boundary; do not attempt automatic conversion. Manual rewrites map to `core::arch::asm!`, a match/enum state machine, and `Result<T, E>` respectively.
 - **Directory exclusions**: All grep-based pattern scanning in assess must exclude test, bench, fuzz, vendor, example, third_party, unity, and contrib directories. Use the `$EXCL` and `$EXCL_FILES` variables defined in the assess skill.
 - **Pattern classification**: Raw grep counts for goto and void* over-inflate risk. The assess skill classifies patterns as benign vs dangerous (e.g., forward-goto-to-cleanup is benign; backward goto is dangerous) before computing risk scores.
 - **Small project fast path**: For projects with ≤ 5 files AND < 2,000 LOC, assess skips module decomposition and convert uses a single agent call instead of the multi-phase foundation-first strategy.
 - **FFI glue ownership**: The convert skill manages FFI boundaries during incremental conversion (Step 5b). After each module is converted, it regenerates bindings, updates build.rs, and verifies the mixed build.
 - **Generated artifacts** (not tracked in git): `c2rust-manifest.toml`, `c2rust-assessment.md`, `c2rust-plan.md`, `c2rust-verification-report.md`.
+
+## End-user docs
+
+`README.md` is the user-facing reference: installation (user-level vs project-level symlinks), quick-start command sequence, requirements (`bindgen`/`cbindgen` are only needed for incremental FFI mode), and FAQ (BLOCKING patterns, refine-loop fallback, `-p` mode permissions, re-converting a module). When changing any user-visible behavior — command names, argument flags, pipeline order, or the manifest schema — update `README.md` alongside the affected SKILL.md.
